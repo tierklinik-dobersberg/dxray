@@ -1,0 +1,5 @@
+http :8080
+dxr /mnt
+index {
+    every 5m
+}
