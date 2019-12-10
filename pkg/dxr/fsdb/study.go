@@ -1,6 +1,7 @@
 package fsdb
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -104,6 +105,7 @@ func (s *study) Model() (models.ImageList, bool) {
 
 func (s *study) load() error {
 	path := filepath.Join(s.Path(), "study.xml")
+	fmt.Println(path)
 	model, err := models.FromFile(path)
 	if err != nil {
 		return err

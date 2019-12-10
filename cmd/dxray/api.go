@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,13 +16,37 @@ import (
 	"github.com/tierklinik-dobersberg/micro/pkg/api"
 )
 
+const (
+	// ActionSearch defines the IAM action that a user must be allowed
+	// in order to search for studies
+	ActionSearch = "dxray:study.search"
+
+	// ActionReadStudy defines the IAM action that a user must be allowed
+	// in order to read a study
+	ActionReadStudy = "dxray:study.read"
+)
+
 // API is the RESTful API of dxray
 var API = api.Module{
 	Name: "api",
 	Setup: func(r api.Router) error {
 		r.GET("/search", searchStudies(r))
+
+		// TODO(ppacher): we should try to extract some study metadata
+		// and not just check if the user has permission to read all studies
+
 		r.GET("/ohif/:study", ohifStudyJSON(r))
 		r.GET("/wado", wadoURI(r))
+
+		/*
+			r.GET("/search", auth.Permission(ActionSearch, nil), searchStudies(r))
+
+			// TODO(ppacher): we should try to extract some study metadata
+			// and not just check if the user has permission to read all studies
+
+			r.GET("/ohif/:study", auth.Permission(ActionReadStudy, nil), ohifStudyJSON(r))
+			r.GET("/wado", auth.Permission(ActionReadStudy, nil), wadoURI(r))
+		*/
 		return nil
 	},
 }
@@ -28,7 +54,7 @@ var API = api.Module{
 func getStudyURL(ctx *gin.Context) func(study, series, instance string) string {
 	return func(study, series, instance string) string {
 		host := ctx.Request.Host
-		scheme := "http"
+		scheme := "https"
 		if ctx.Request.TLS != nil {
 			scheme = "https"
 		}
@@ -40,7 +66,11 @@ func getStudyURL(ctx *gin.Context) func(study, series, instance string) string {
 		values.Add("objectUID", instance)
 		values.Add("requestType", "WADO")
 
-		return fmt.Sprintf("%s://%s/wado?%s", scheme, host, values.Encode())
+		_ = scheme
+		url := fmt.Sprintf("dicomweb://%s/wado?%s", host, values.Encode())
+		log.Infof("url: %q", url)
+
+		return url
 	}
 }
 
@@ -98,9 +128,18 @@ func ohifStudyJSON(r api.Router) gin.HandlerFunc {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, map[string]interface{}{
+		buf := &bytes.Buffer{}
+		enc := json.NewEncoder(buf)
+		enc.SetEscapeHTML(false)
+
+		if err := enc.Encode(map[string]interface{}{
 			"studies": []interface{}{model},
-		})
+		}); err != nil {
+			r.AbortRequest(ctx, http.StatusInternalServerError, err)
+			return
+		}
+
+		ctx.Data(http.StatusOK, "application/json", buf.Bytes())
 	}
 }
 
