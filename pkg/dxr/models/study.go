@@ -12,13 +12,13 @@ import (
 type (
 	// ImageList is stored inside study.xml. It contains patient data
 	ImageList struct {
-		XMLName xml.Name `xml:"Imagelist"`
+		XMLName xml.Name `xml:"Imagelist" json:"-"`
 		Patient Patient  `xml:"Patient"`
 	}
 
 	// Patient describes a patient
 	Patient struct {
-		XMLName xml.Name `xml:"Patient"`
+		XMLName xml.Name `xml:"Patient" json:"-"`
 		Name    string   `xml:"Name"`
 		ID      string   `xml:"ID"`
 		Birth   string   `xml:"Birth"`
@@ -28,13 +28,13 @@ type (
 
 	// Visit is a visit of a patient and contains a study
 	Visit struct {
-		XMLName xml.Name `xml:"Visit"`
+		XMLName xml.Name `xml:"Visit" json:"-"`
 		Study   Study    `xml:"Study"`
 	}
 
 	// Study represents a study done during the Visit of a Patient
 	Study struct {
-		XMLName     xml.Name `xml:"Study"`
+		XMLName     xml.Name `xml:"Study" json:"-"`
 		UID         string   `xml:"UID"`
 		Date        string   `xml:"Date"`
 		Description string   `xml:"Description"`
@@ -43,7 +43,7 @@ type (
 
 	// Series is a series of medical imaging pictures taken during a study
 	Series struct {
-		XMLName     xml.Name   `xml:"Series"`
+		XMLName     xml.Name   `xml:"Series" json:"-"`
 		UID         string     `xml:"UID"`
 		Number      int        `xml:"Number"`
 		Description string     `xml:"Description"`
@@ -54,16 +54,16 @@ type (
 
 	// Instance is a medical picture take during a series
 	Instance struct {
-		XMLName xml.Name     `xml:"Instance"`
+		XMLName xml.Name     `xml:"Instance" json:"-"`
 		UID     string       `xml:"UID"`
 		Number  int          `xml:"Number"`
-		Data    InstanceData `xml:"Data"`
+		Data    InstanceData `xml:"Data" json:"-"`
 	}
 
 	// InstanceData describes the path to the medical image of an Instance
 	InstanceData struct {
-		XMLName   xml.Name `xml:"Data"`
-		DICOMPath string   `xml:"DICOM"`
+		XMLName   xml.Name `xml:"Data" json:"-"`
+		DICOMPath string   `xml:"DICOM" json:"-"`
 	}
 )
 

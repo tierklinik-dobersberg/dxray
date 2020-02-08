@@ -23,6 +23,8 @@ type (
 		PatientBirthDate string   `json:"patientBirthDate,omitempty"`
 		PatientID        string   `json:"patientId,omitempty"`
 		PatientSex       string   `json:"patientSex,omitempty"`
+		AnimalRace       string   `json:"animalRace"`
+		AnimalName       string   `json:"animalName"`
 		Series           []Series `json:"seriesList,omitempty"`
 	}
 
@@ -77,10 +79,12 @@ func JSONFromDXR(study fsdb.Study, instanceURL func(string, string, string) stri
 	model := &StudyJSON{
 		UID:              s.UID,
 		Date:             s.Date,
-		PatientName:      xml.Patient.Name,
+		PatientName:      xml.Patient.OwnerName(),
 		PatientBirthDate: xml.Patient.Birth,
 		PatientID:        xml.Patient.ID,
 		PatientSex:       xml.Patient.Sex,
+		AnimalName:       xml.Patient.AnimalName(),
+		AnimalRace:       xml.Patient.AnimalRace(),
 	}
 
 	for _, series := range s.Series {

@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/apex/log"
 	"github.com/gin-gonic/gin"
@@ -38,6 +41,8 @@ var API = api.Module{
 		r.GET("/ohif/:study", ohifStudyJSON(r))
 		r.GET("/wado", wadoURI(r))
 
+		r.GET("/list", listStudies(r))
+
 		/*
 			r.GET("/search", auth.Permission(ActionSearch, nil), searchStudies(r))
 
@@ -54,11 +59,6 @@ var API = api.Module{
 func getStudyURL(ctx *gin.Context) func(study, series, instance string) string {
 	return func(study, series, instance string) string {
 		host := ctx.Request.Host
-		scheme := "https"
-		if ctx.Request.TLS != nil {
-			scheme = "https"
-		}
-
 		values := url.Values{}
 
 		values.Add("seriesUID", series)
@@ -66,11 +66,7 @@ func getStudyURL(ctx *gin.Context) func(study, series, instance string) string {
 		values.Add("objectUID", instance)
 		values.Add("requestType", "WADO")
 
-		_ = scheme
-		url := fmt.Sprintf("dicomweb://%s/wado?%s", host, values.Encode())
-		log.Infof("url: %q", url)
-
-		return url
+		return fmt.Sprintf("dicomweb://%s/wado?%s", host, values.Encode())
 	}
 }
 
@@ -152,7 +148,7 @@ func wadoURI(r api.Router) gin.HandlerFunc {
 		objectUID := ctx.Query("objectUID")
 		contentType := ctx.Query("contentType")
 
-		if contentType != "" && contentType != "application/dicom" {
+		if contentType != "" && (contentType != "application/dicom" && contentType != "image/jpeg") {
 			ctx.AbortWithStatus(http.StatusNotAcceptable)
 			return
 		}
@@ -182,7 +178,15 @@ func wadoURI(r api.Router) gin.HandlerFunc {
 			if series.UID == seriesUID {
 				for _, instance := range series.Instances {
 					if instance.UID == objectUID {
-						path := std.RealPath(instance.Data.DICOMPath)
+						// check if we should return application/dicom or the thumbnail image
+						var path string
+						if contentType == "image/jpeg" {
+							path = strings.Replace(instance.Data.DICOMPath, "I_", "S128_", 1)
+							path = strings.Replace(path, ".dcm", ".jpg", 1)
+							path = std.RealPath(path)
+						} else {
+							path = std.RealPath(instance.Data.DICOMPath)
+						}
 
 						ctx.File(path)
 						return
@@ -192,6 +196,107 @@ func wadoURI(r api.Router) gin.HandlerFunc {
 		}
 
 		ctx.AbortWithStatus(http.StatusNotFound)
+	}
+}
+
+func listStudies(r api.Router) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		db, _ := r.GetKey(ContextKeyDXR).(*DXR).Open()
+
+		limit, err := getNumberParamDefault(ctx, "limit", 100)
+		if err != nil {
+			r.AbortRequest(ctx, http.StatusInternalServerError, err)
+			return
+		}
+
+		offset, err := getNumberParamDefault(ctx, "offset", 0)
+		if err != nil {
+			r.AbortRequest(ctx, http.StatusInternalServerError, err)
+			return
+		}
+
+		volumes, err := db.VolumeNames()
+		if err != nil {
+			r.AbortRequest(ctx, http.StatusInternalServerError, err)
+			return
+		}
+
+		if len(volumes) == 0 {
+			ctx.JSON(http.StatusOK, []interface{}{})
+			return
+		}
+
+		// reverse sort the volume names so the newest are on top
+		sort.Sort(sort.Reverse(sort.StringSlice(volumes)))
+
+		result := make([]interface{}, limit)
+
+		volIdx := 0
+		vol, err := db.OpenVolumeByName(volumes[volIdx])
+		if err != nil {
+			r.AbortRequest(ctx, http.StatusInternalServerError, err)
+			return
+		}
+
+		i := 0
+		// iterate volumes
+	L:
+		for {
+			styIdx := 0
+			studies, err := vol.Studies()
+			if err != nil {
+				r.AbortRequest(ctx, http.StatusInternalServerError, err)
+				return
+			}
+
+			// sort the in reverse order so newest are on top
+			sort.Sort(sort.Reverse(sort.StringSlice(studies)))
+
+			// iterate studies
+			for {
+				if i-offset >= limit {
+					break L
+				}
+
+				if styIdx >= len(studies) {
+					break
+				}
+
+				if i-offset >= 0 {
+
+					study, err := vol.OpenStudyByName(studies[styIdx])
+					if err != nil {
+						r.AbortRequest(ctx, http.StatusInternalServerError, err)
+						return
+					}
+
+					m, err := ohif.JSONFromDXR(study, getStudyURL(ctx), false)
+					if err != nil {
+						r.AbortRequest(ctx, http.StatusInternalServerError, err)
+						return
+					}
+
+					result[i-offset] = m
+				}
+
+				styIdx++
+				i++
+			}
+
+			if volIdx+1 > len(volumes) {
+				break L
+			}
+
+			volIdx++
+
+			vol, err = db.OpenVolumeByName(volumes[volIdx])
+			if err != nil {
+				r.AbortRequest(ctx, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		ctx.JSON(http.StatusOK, result)
 	}
 }
 
@@ -222,4 +327,33 @@ func getStudyByUID(ctx *gin.Context, uid string, r api.Router) (fsdb.Study, erro
 	}
 
 	return std, nil
+}
+
+func getNumberParam(ctx *gin.Context, name string) (int, bool, error) {
+	v := ctx.Query(name)
+	if v != "" {
+		var err error
+
+		i, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return 0, false, err
+		}
+
+		return int(i), true, nil
+	}
+
+	return 0, false, nil
+}
+
+func getNumberParamDefault(ctx *gin.Context, name string, def int) (int, error) {
+	v, set, err := getNumberParam(ctx, name)
+	if err != nil {
+		return 0, err
+	}
+
+	if !set {
+		return def, nil
+	}
+
+	return v, nil
 }
