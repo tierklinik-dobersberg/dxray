@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	// ErrScanRunning is returned it a scanner is already running
+	// ErrScanRunning is returned it a scanner is already running.
 	ErrScanRunning = errors.New("scan is already running")
 )
 
 // Scanner scans a DX-R fsdb for all studies stored
-// inside
+// inside.
 type Scanner struct {
 	db fsdb.DB
 }
@@ -25,8 +25,8 @@ func New(db fsdb.DB) *Scanner {
 	}
 }
 
-// Scan scans the whole fsdb and returns each study found
-// If ctx is cancelled the scan will be stopped
+// Scan scans the whole fsdb and returns each study found.
+// If ctx is cancelled the scan will be stopped.
 func (s *Scanner) Scan(ctx context.Context) (<-chan fsdb.Study, error) {
 	ch := make(chan fsdb.Study)
 
@@ -35,7 +35,7 @@ func (s *Scanner) Scan(ctx context.Context) (<-chan fsdb.Study, error) {
 	return ch, nil
 }
 
-// ScanVolume scans a given volume
+// ScanVolume scans a given volume.
 func (s *Scanner) ScanVolume(ctx context.Context, vol fsdb.Volume) (chan fsdb.Study, error) {
 	ch := make(chan fsdb.Study)
 
@@ -47,7 +47,7 @@ func (s *Scanner) ScanVolume(ctx context.Context, vol fsdb.Volume) (chan fsdb.St
 	return ch, nil
 }
 
-// ScanVolumeName scans the volume with a given name
+// ScanVolumeName scans the volume with a given name.
 func (s *Scanner) ScanVolumeName(ctx context.Context, name string) (chan fsdb.Study, error) {
 	vol, err := s.db.OpenVolumeByName(name)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *Scanner) ScanVolumeName(ctx context.Context, name string) (chan fsdb.St
 	return s.ScanVolume(ctx, vol)
 }
 
-// ScanVolumeID scans the volume with ID
+// ScanVolumeID scans the volume with ID.
 func (s *Scanner) ScanVolumeID(ctx context.Context, idx int) (chan fsdb.Study, error) {
 	vol, err := s.db.OpenVolumeByIdx(idx)
 	if err != nil {
