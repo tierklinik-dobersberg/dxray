@@ -11,7 +11,7 @@ import (
 
 type (
 	// Index is a search index and provides full-text search capabilities.
-	// It is backed y blevesearch/bleve
+	// It is backed a blevesearch/bleve index.
 	Index struct {
 		index bleve.Index
 	}

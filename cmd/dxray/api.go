@@ -14,6 +14,7 @@ import (
 	"github.com/apex/log"
 	"github.com/gin-gonic/gin"
 	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/dxray/internal/index"
 	"github.com/tierklinik-dobersberg/dxray/internal/ohif"
 	"github.com/tierklinik-dobersberg/dxray/internal/search"
 	"github.com/tierklinik-dobersberg/micro/pkg/api"
@@ -72,7 +73,7 @@ func getStudyURL(ctx *gin.Context) func(study, series, instance string) string {
 
 func searchStudies(r api.Router) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		index := r.GetKey(ContextKeyIndexer).(*StudyIndexer)
+		index := r.GetKey(ContextKeyIndexer).(*index.StudyIndexer)
 		db, _ := r.GetKey(ContextKeyDXR).(*DXR).Open()
 
 		term := ctx.Query("q")
@@ -301,7 +302,7 @@ func listStudies(r api.Router) gin.HandlerFunc {
 }
 
 func getStudyByUID(ctx *gin.Context, uid string, r api.Router) (fsdb.Study, error) {
-	index := r.GetKey(ContextKeyIndexer).(*StudyIndexer)
+	index := r.GetKey(ContextKeyIndexer).(*index.StudyIndexer)
 	db, _ := r.GetKey(ContextKeyDXR).(*DXR).Open()
 
 	key, err := index.Search(fmt.Sprintf("uid:%q", uid))
