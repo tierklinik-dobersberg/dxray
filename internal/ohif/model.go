@@ -8,7 +8,7 @@ import (
 	"github.com/grailbio/go-dicom"
 	"github.com/grailbio/go-dicom/dicomtag"
 	"github.com/iancoleman/strcase"
-	"github.com/tierklinik-dobersberg/dxray/pkg/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
 )
 
 type (

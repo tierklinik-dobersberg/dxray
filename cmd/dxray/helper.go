@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/tierklinik-dobersberg/dxray/pkg/dxr/fsdb"
-	"github.com/tierklinik-dobersberg/dxray/pkg/search"
+	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/dxray/internal/search"
 )
 
 func runREPL(index *search.Index, db fsdb.DB) {

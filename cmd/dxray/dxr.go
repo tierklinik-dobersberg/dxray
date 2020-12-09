@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/apex/log"
-	"github.com/tierklinik-dobersberg/dxray/pkg/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
 	"github.com/tierklinik-dobersberg/micro/pkg/config"
 	"github.com/tierklinik-dobersberg/micro/pkg/service"
 )

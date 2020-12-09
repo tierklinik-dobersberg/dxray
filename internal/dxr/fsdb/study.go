@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tierklinik-dobersberg/dxray/pkg/dxr/models"
+	"github.com/tierklinik-dobersberg/dxray/internal/dxr/models"
 )
 
 type (

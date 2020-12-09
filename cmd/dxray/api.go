@@ -13,9 +13,9 @@ import (
 
 	"github.com/apex/log"
 	"github.com/gin-gonic/gin"
-	"github.com/tierklinik-dobersberg/dxray/pkg/dxr/fsdb"
-	"github.com/tierklinik-dobersberg/dxray/pkg/ohif"
-	"github.com/tierklinik-dobersberg/dxray/pkg/search"
+	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/dxray/internal/ohif"
+	"github.com/tierklinik-dobersberg/dxray/internal/search"
 	"github.com/tierklinik-dobersberg/micro/pkg/api"
 )
 

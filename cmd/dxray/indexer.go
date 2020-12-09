@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/apex/log"
-	"github.com/tierklinik-dobersberg/dxray/pkg/scan"
-	"github.com/tierklinik-dobersberg/dxray/pkg/search"
+	"github.com/tierklinik-dobersberg/dxray/internal/scan"
+	"github.com/tierklinik-dobersberg/dxray/internal/search"
 	"github.com/tierklinik-dobersberg/micro/pkg/config"
 	"github.com/tierklinik-dobersberg/micro/pkg/service"
 )

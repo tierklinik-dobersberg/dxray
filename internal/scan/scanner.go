@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/tierklinik-dobersberg/dxray/pkg/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
 )
 
 var (
