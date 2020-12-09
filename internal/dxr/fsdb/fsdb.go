@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apex/log"
+	"github.com/tierklinik-dobersberg/logger"
 )
 
 type (
@@ -33,14 +33,14 @@ type (
 	// db implements the DB interface
 	db struct {
 		rootPath string // path to the ORconsoleDB folder
-		l        log.Interface
+		l        logger.Logger
 	}
 )
 
 // New creates a new DB from the given ORconsoleDB path
-func New(path string, logger log.Interface) (DB, error) {
-	if logger == nil {
-		logger = log.Log
+func New(path string, log logger.Logger) (DB, error) {
+	if log == nil {
+		log = logger.DefaultLogger()
 	}
 
 	stat, err := os.Stat(path)
@@ -53,7 +53,7 @@ func New(path string, logger log.Interface) (DB, error) {
 
 	return &db{
 		rootPath: path,
-		l:        logger,
+		l:        log,
 	}, nil
 }
 
@@ -73,7 +73,7 @@ func (d *db) VolumeNames() ([]string, error) {
 		fname := f.Name()
 
 		if !strings.HasPrefix(fname, "VOL") {
-			d.l.WithField("name", fname).Warnf("volumes must have a VOL prefix")
+			d.l.WithFields(logger.Fields{"name": fname}).Errorf("skipping volume: volumes must have a VOL prefix")
 			continue
 		}
 

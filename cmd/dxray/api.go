@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apex/log"
 	"github.com/gin-gonic/gin"
 	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
 	"github.com/tierklinik-dobersberg/dxray/internal/index"
 	"github.com/tierklinik-dobersberg/dxray/internal/ohif"
 	"github.com/tierklinik-dobersberg/dxray/internal/search"
+	"github.com/tierklinik-dobersberg/logger"
 	"github.com/tierklinik-dobersberg/micro/pkg/api"
 )
 
@@ -73,6 +73,8 @@ func getStudyURL(ctx *gin.Context) func(study, series, instance string) string {
 
 func searchStudies(r api.Router) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		log := logger.From(ctx.Request.Context())
+
 		index := r.GetKey(ContextKeyIndexer).(*index.StudyIndexer)
 		db, _ := r.GetKey(ContextKeyDXR).(*DXR).Open()
 
@@ -87,16 +89,16 @@ func searchStudies(r api.Router) gin.HandlerFunc {
 		for _, key := range results {
 			s, err := search.Get(key, db)
 			if err != nil {
-				r.Log().WithFields(log.Fields{
+				log.WithFields(logger.Fields{
 					"error": err.Error(),
 					"key":   key,
 				}).Errorf("failed to open study")
 				continue
 			}
 
-			m, err := ohif.JSONFromDXR(s, getStudyURL(ctx), false)
+			m, err := ohif.JSONFromDXR(ctx.Request.Context(), s, getStudyURL(ctx), false)
 			if err != nil {
-				r.Log().WithFields(log.Fields{
+				log.WithFields(logger.Fields{
 					"error": err.Error(),
 					"key":   key,
 				}).Errorf("failed to get JSON representaion")
@@ -119,7 +121,7 @@ func ohifStudyJSON(r api.Router) gin.HandlerFunc {
 			return
 		}
 
-		model, err := ohif.JSONFromDXR(std, getStudyURL(ctx), true)
+		model, err := ohif.JSONFromDXR(ctx.Request.Context(), std, getStudyURL(ctx), true)
 		if err != nil {
 			r.AbortRequest(ctx, http.StatusInternalServerError, err)
 			return
@@ -271,7 +273,7 @@ func listStudies(r api.Router) gin.HandlerFunc {
 						return
 					}
 
-					m, err := ohif.JSONFromDXR(study, getStudyURL(ctx), false)
+					m, err := ohif.JSONFromDXR(ctx.Request.Context(), study, getStudyURL(ctx), false)
 					if err != nil {
 						r.AbortRequest(ctx, http.StatusInternalServerError, err)
 						return

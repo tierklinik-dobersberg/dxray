@@ -1,14 +1,15 @@
 package ohif
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
-	"github.com/apex/log"
 	"github.com/grailbio/go-dicom"
 	"github.com/grailbio/go-dicom/dicomtag"
 	"github.com/iancoleman/strcase"
 	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/logger"
 )
 
 type (
@@ -69,7 +70,9 @@ type (
 
 // JSONFromDXR returns the JSON format required by OHIF viewer
 // from the study.xml file stored by DX-R
-func JSONFromDXR(study fsdb.Study, instanceURL func(string, string, string) string, withTags bool) (*StudyJSON, error) {
+func JSONFromDXR(ctx context.Context, study fsdb.Study, instanceURL func(string, string, string) string, withTags bool) (*StudyJSON, error) {
+	log := logger.From(ctx)
+
 	if err := study.Load(); err != nil {
 		return nil, err
 	}
@@ -114,7 +117,7 @@ func JSONFromDXR(study fsdb.Study, instanceURL func(string, string, string) stri
 			if withTags {
 				path := study.RealPath(instance.Data.DICOMPath)
 				if err := setDCMTags(path, im); err != nil {
-					log.WithFields(log.Fields{
+					log.WithFields(logger.Fields{
 						"error": err.Error(),
 						"path":  path,
 					}).Errorf("failed to set tags from DCM file")

@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
 	"github.com/tierklinik-dobersberg/dxray/internal/scan"
 	"github.com/tierklinik-dobersberg/dxray/internal/search"
+	"github.com/tierklinik-dobersberg/logger"
 )
 
 // StudyIndexer priodically scans a DX-R file-system database
@@ -52,7 +52,7 @@ func (s *StudyIndexer) init() error {
 	}
 
 	if s.repeatFullScan != 0 {
-		log.Infof("scanning database every %s", s.repeatFullScan)
+		logger.DefaultLogger().Infof("scanning database every %s", s.repeatFullScan)
 
 		s.ticker = time.NewTicker(s.repeatFullScan)
 		go func() {
@@ -67,13 +67,17 @@ func (s *StudyIndexer) init() error {
 
 // FullScan scans all studies and updates the index
 func (s *StudyIndexer) FullScan(ctx context.Context) error {
+	log := logger.From(ctx)
+
 	start := time.Now()
 
 	count := 0
 	newStudies := 0
 	existingStudies := 0
 
-	log.WithField("module", "indexer").Debug("starting full database index scan")
+	log.WithFields(logger.Fields{
+		"module": "indexer",
+	}).Info("starting full database index scan")
 
 	studies, err := s.scanner.Scan(ctx)
 	if err != nil {
@@ -84,7 +88,7 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 		count++
 		new, err := s.Index.Add(study)
 		if err != nil {
-			log.WithFields(log.Fields{
+			log.WithFields(logger.Fields{
 				"error":  err.Error(),
 				"module": "indexer",
 				"study":  study.Name(),
@@ -99,7 +103,7 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 		}
 
 		if count%100 == 0 && time.Now().Sub(start) > 5*time.Second {
-			log.WithFields(log.Fields{
+			log.WithFields(logger.Fields{
 				"module":   "indexer",
 				"study":    study.Name(),
 				"volume":   study.Volume().Name(),
@@ -115,7 +119,7 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 	}
 	duration = duration.Round(round)
 
-	log.WithFields(log.Fields{
+	log.WithFields(logger.Fields{
 		"module": "indexer",
 		"total":  count,
 		"new":    newStudies,

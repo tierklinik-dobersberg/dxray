@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/apex/log"
 	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
+	"github.com/tierklinik-dobersberg/logger"
 	"github.com/tierklinik-dobersberg/micro/pkg/config"
 	"github.com/tierklinik-dobersberg/micro/pkg/service"
 )
@@ -48,7 +48,9 @@ func (dxr *DXR) Directive() service.Directive {
 
 // Open opens the DX-R file-system
 func (dxr *DXR) Open() (fsdb.DB, error) {
-	return fsdb.New(dxr.path, log.WithField("fsdb", dxr.path))
+	return fsdb.New(dxr.path, logger.DefaultLogger().WithFields(logger.Fields{
+		"fsdb": dxr.path,
+	}))
 }
 
 func ensureDirectory(path string) error {
