@@ -1,0 +1,13 @@
+[Unit]
+Description=Expose DICOM images
+
+[Service]
+Type=simple
+User=nobody
+Group=nobody
+ExecStart=/usr/local/bin/dxray
+ConfigurationDirectory=cis/dxray
+StateDirectory=cis/dxray
+
+[Install]
+WantedBy=multi-user.target

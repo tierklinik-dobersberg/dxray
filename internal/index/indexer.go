@@ -2,12 +2,14 @@ package index
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/tierklinik-dobersberg/dxray/internal/dxr/fsdb"
 	"github.com/tierklinik-dobersberg/dxray/internal/scan"
 	"github.com/tierklinik-dobersberg/dxray/internal/search"
 	"github.com/tierklinik-dobersberg/logger"
+	"github.com/tierklinik-dobersberg/service/svcenv"
 )
 
 // StudyIndexer priodically scans a DX-R file-system database
@@ -25,7 +27,7 @@ type StudyIndexer struct {
 // NewStudyIndexer creates a new study indexer
 func NewStudyIndexer(db fsdb.DB, path string, repeat time.Duration) (*StudyIndexer, error) {
 	if path == "" {
-		path = "index.bleve"
+		path = filepath.Join(svcenv.Env().StateDirectory, "index.bleve")
 	}
 
 	idx := &StudyIndexer{
@@ -67,7 +69,9 @@ func (s *StudyIndexer) init() error {
 
 // FullScan scans all studies and updates the index
 func (s *StudyIndexer) FullScan(ctx context.Context) error {
-	log := logger.From(ctx)
+	log := logger.From(ctx).WithFields(logger.Fields{
+		"module": "indexer",
+	})
 
 	start := time.Now()
 
@@ -75,9 +79,7 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 	newStudies := 0
 	existingStudies := 0
 
-	log.WithFields(logger.Fields{
-		"module": "indexer",
-	}).Info("starting full database index scan")
+	log.Info("starting full database index scan")
 
 	studies, err := s.scanner.Scan(ctx)
 	if err != nil {
@@ -90,7 +92,6 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 		if err != nil {
 			log.WithFields(logger.Fields{
 				"error":  err.Error(),
-				"module": "indexer",
 				"study":  study.Name(),
 				"volume": study.Volume().Name(),
 			}).Errorf("failed to index study")
@@ -104,7 +105,6 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 
 		if count%100 == 0 && time.Now().Sub(start) > 5*time.Second {
 			log.WithFields(logger.Fields{
-				"module":   "indexer",
 				"study":    study.Name(),
 				"volume":   study.Volume().Name(),
 				"duration": time.Now().Sub(start).Round(time.Second),
@@ -120,10 +120,9 @@ func (s *StudyIndexer) FullScan(ctx context.Context) error {
 	duration = duration.Round(round)
 
 	log.WithFields(logger.Fields{
-		"module": "indexer",
-		"total":  count,
-		"new":    newStudies,
-		"known":  existingStudies,
+		"total": count,
+		"new":   newStudies,
+		"known": existingStudies,
 	}).Infof("Scan finished in %s", duration)
 
 	return nil
