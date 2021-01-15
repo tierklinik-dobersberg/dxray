@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/gin-gonic/gin"
 	"github.com/ppacher/system-conf/conf"
 	"github.com/tierklinik-dobersberg/dxray/internal/api"
@@ -23,6 +22,8 @@ func main() {
 		schema.Config `section:"Global"`
 	}
 
+	ctx := context.Background()
+
 	instance, err := service.Boot(service.Config{
 		ConfigFileName: "dxray.conf",
 		ConfigFileSpec: conf.FileSpec{
@@ -37,15 +38,13 @@ func main() {
 		},
 	})
 	if err != nil {
-		logger.Errorf("failed to bootstap: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to bootstap: %s", err)
 	}
 
 	// Ensure the configured database path actually exists and is
 	// a directory.
 	if err := ensureDirectory(cfg.DatabasePath); err != nil {
-		logger.Errorf("failed to bootstap: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to bootstap: %s", err)
 	}
 
 	// Create a new fsdb for the given database path
@@ -53,16 +52,14 @@ func main() {
 		"fsdb": cfg.DatabasePath,
 	}))
 	if err != nil {
-		logger.Errorf("failed to bootstap: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to bootstap: %s", err)
 	}
 
 	// Create a new study-indxer that scans for new studies every
 	// two minutes.
 	indexer, err := index.NewStudyIndexer(db, "", time.Minute*2)
 	if err != nil {
-		logger.Errorf("failed to create study indexer: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to create study indexer: %s", err)
 	}
 
 	// Prepare the application context that is passed to each
@@ -75,22 +72,19 @@ func main() {
 	// Get the number of currently sotred studies.
 	count, err := indexer.Count()
 	if err != nil {
-		logger.Errorf("failed to get index count: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to get index count: %s", err)
 	}
-	logger.Infof("study index contains %d studies", count)
+	logger.Infof(ctx, "study index contains %d studies", count)
 
 	// Perform a new full scan so we start with an up-to-data
 	// study index.
 	if err := indexer.FullScan(context.Background()); err != nil {
-		log.Errorf("failed to perform initial full scan: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to perform initial full scan: %s", err)
 	}
 
 	// Finally, start serving our API.
 	if err := instance.Serve(); err != nil {
-		log.Errorf("failed to serve: %s", err)
-		os.Exit(1)
+		logger.Fatalf(ctx, "failed to serve: %s", err)
 
 	}
 }
