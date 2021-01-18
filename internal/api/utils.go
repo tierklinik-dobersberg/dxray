@@ -27,7 +27,7 @@ func createStudyURLFactory(ctx *gin.Context) func(study, series, instance string
 		values.Add("objectUID", instance)
 		values.Add("requestType", "WADO")
 
-		return fmt.Sprintf("dicomweb://%s/wado?%s", host, values.Encode())
+		return fmt.Sprintf("dicomweb://%s/api/dxray/v1/wado?%s", host, values.Encode())
 	}
 }
 

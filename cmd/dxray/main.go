@@ -31,9 +31,13 @@ func main() {
 		},
 		ConfigTarget: &cfg,
 		RouteSetupFunc: func(grp gin.IRouter) error {
-			api.ListStudiesEndpoint(grp)
-			api.OHIFEndpoint(grp)
-			api.SearchStudiesEndpoint(grp)
+			grp = grp.Group("/api/dxray/v1")
+			{
+				api.ListStudiesEndpoint(grp)
+				api.OHIFEndpoint(grp)
+				api.SearchStudiesEndpoint(grp)
+				api.WadoEndpoint(grp)
+			}
 			return nil
 		},
 	})
