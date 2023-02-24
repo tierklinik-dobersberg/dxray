@@ -10,5 +10,5 @@ require (
 	github.com/ppacher/system-conf v0.6.1
 	github.com/tierklinik-dobersberg/logger v0.2.0
 	github.com/tierklinik-dobersberg/service v0.2.1
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/net v0.7.0
 )
